@@ -36,7 +36,16 @@
     "source-selection",
     "streaming"
   ],
+  "author": "AnakUn69",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnakUn69/rate-my-source.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AnakUn69/rate-my-source/issues"
+  },
+  "homepage": "https://github.com/AnakUn69/rate-my-source#readme",
   "devDependencies": {
     "tsup": "^8.3.5",
     "typescript": "^5.7.3",
