@@ -2,8 +2,6 @@
 
 Transparent, configurable scoring and ranking engine for picking the best media source. For every source you get back exactly what went in, what factors were scored and how, and the final score.
 
-Ported and generalized from the source-scoring logic used in Hellspio's source picker.
-
 ## Install
 
 ```sh
