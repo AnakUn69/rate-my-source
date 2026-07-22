@@ -1,6 +1,6 @@
 {
   "name": "rate-my-source",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Transparent, configurable scoring and ranking engine for picking the best media source — echoes back what went in, what was scored and how, and the final score.",
   "type": "module",
   "main": "./dist/index.cjs",
