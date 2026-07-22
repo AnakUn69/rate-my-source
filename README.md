@@ -67,12 +67,58 @@ scoreSource(
 
 Pass `disableDefaultRules: true` to run only your own rules. Any extra fields on your source object pass through untouched onto `result.input`.
 
+## Ranking a scraped/noisy candidate list (season/episode, language, quality preference, size)
+
+These are all opt-in — a call that doesn't pass them behaves exactly as shown above.
+Useful when sources come from a search rather than a curated catalog, so titles can be
+sloppy, mislabeled, or for a completely different item:
+
+```ts
+scoreSource(
+  { title: "Dr. House S01E01 CZ SK Dabing 1080p", languages: ["cs"], size: 2 * 1024 ** 3 },
+  {
+    knownTitles: ["House", "Dr. House"], // aliases are just more knownTitles entries
+    weights: { titleMatch: 80 },
+    season: 1,
+    episode: 1, // +100 if any season/episode notation matches (S01E01, 1x01, "Řada 1 Epizoda 1", ...)
+    year: "2004", // +25 if the year appears in the title
+    languagePriority: ["cs", "sk", "en"], // +50 for the top language; -10/-80 tradeoffs (see below)
+    preferredQuality: "1080p", // +20 if qualityKeys matches
+    sizeBonusPerGiB: 1, // + this many points per GiB of `size`
+    strictTitleMatch: true, // a confident non-match scores a strong negative, not just 0
+    allowNegativeTotal: true, // don't floor `.total` at 0 — needed for strictTitleMatch to matter
+  }
+);
+```
+
+- **Title matching** is tiered rather than a continuous ratio: a clean whole-title match
+  scores the full `weights.titleMatch`; a single-word `knownTitles` entry (e.g. a bare
+  "House") only counts as a match when at most one other real word sits next to it in the
+  source title — otherwise a longer, unrelated title that happens to start the same way
+  (e.g. "House of the Dragon") won't be mistaken for it.
+- **`languagePriority`**: rewards a source whose `languages` includes the top preference;
+  if that preference is `"cs"`, a subtitled-only release (`hasSubtitles`) is penalized
+  slightly (a dub is usually preferred over subtitles); if the top preference is `"en"`
+  but the source is dubbed in `"cs"`/`"sk"`, that's penalized more heavily.
+- **`strictTitleMatch`** + **`allowNegativeTotal`** together let a confident non-match
+  (e.g. a same-week, similarly-named but different show) rank below everything else even
+  if it happens to also match season/episode and have a large `size` — rather than a
+  merely-partial match losing to it once bonuses stack up.
+
+Two more building blocks help construct these fields from a raw release filename before
+scoring: `detectLanguages`/`detectHasSubtitles`/`detectSuspiciousReason` (audio language,
+subtitle, and cam/screener detection) and `getQualityRank`/`inferQualityFromFilename` (a
+fixed resolution-tier ranking, used internally by the quality-rank tie-break rule).
+
 ## API
 
 - `scoreSource<T extends RateableSource>(item: T, options?: ScoringOptions<T>): ScoreResult<T>`
 - `rateSources<T extends RateableSource>(items: T[], options?: ScoringOptions<T>): ScoreResult<T>[]`
 - Types: `RateableSource`, `ScoreResult`, `ScoreBreakdown`, `ScoreReason`, `ScoringRule`, `ScoringRuleContext`, `ScoringOptions`
-- Building blocks: `normalizeTitle`, `hasEpisodeMarker`, `DEFAULT_IGNORED_WORDS_RE`, `trailerPenaltyRule`, `typeMismatchRule`, `DEFAULT_RULES`
+- Title/episode building blocks: `normalizeTitle`, `hasEpisodeMarker`, `hasSeasonEpisodeMatch`, `seasonEpisodeTokens`, `DEFAULT_IGNORED_WORDS_RE`
+- Quality building blocks: `getQualityRank`, `formatQualityLabel`, `inferQualityFromFilename`, `isNativeQualityLabel`
+- Filename heuristics: `detectLanguages`, `detectHasSubtitles`, `detectSuspiciousReason`, `normalizeLanguageCode`
+- Default rules: `trailerPenaltyRule`, `typeMismatchRule`, `seasonEpisodeMatchRule`, `yearMatchRule`, `languagePriorityRule`, `qualityPreferenceRule`, `qualityRankTieBreakRule`, `suspiciousReleaseRule`, `sizeBonusRule`, `DEFAULT_RULES`
 
 ## License
 
